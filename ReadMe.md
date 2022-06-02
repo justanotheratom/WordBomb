@@ -20,46 +20,10 @@ This program implements one turn of a player, given
 - the sequence of characters proposed so far.
 - whether or not the previous player said "continue".
 
-### **How to use this program?**
+### **How to play this game?**
 
-    dotnet fsi .\WordBomb.fsx <wordlistfile> <numplayers> <wordprefix> <continuecalled>
+    dotnet fsi .\WordBomb.fsx <wordlistfile>
 
-Example 1
+Example
 
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 and false
-
-will output
-
-    Bombed
-
-Example 2
-
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 and true
-
-will output
-
-    Proceed { continueCalled = false ; prefix = "andr" }
-
-Example 3
-
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 andr true
-
-will output
-
-    NotAWord
-
-Example 4
-
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 brac false
-
-will output
-
-    Proceed { continueCalled = true ; prefix = "brack" }
-
-Example 5
-
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 foobar false
-
-will output
-
-    Challenge
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt
