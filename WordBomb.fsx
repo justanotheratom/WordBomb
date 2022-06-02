@@ -87,20 +87,29 @@ module WordBomb =
 
     open Trie
 
+    type GameState =
+        {
+            continueCalled : bool
+            prefix : string
+        }
+
     type TurnResult =
+    | NotAWord
     | Bombed
     | Challenge
-    | Proceed of sayContinue:bool * newPrefix:string
+    | Proceed of GameState
 
-    let takeTurn numPlayers (prefix: string) trie =
-        if hasPrefix prefix trie then
-            if hasWord prefix trie then
+    let takeTurn numPlayers (gameState: GameState) trie =
+        if hasPrefix gameState.prefix trie then
+            if (hasWord gameState.prefix trie) && (not gameState.continueCalled) then
                 Bombed
+            elif (not (hasWord gameState.prefix trie)) && gameState.continueCalled then
+                NotAWord
             else
                 let matchingSuffixes =
                     trie
-                    |> wordsWithPrefix prefix
-                    |> List.map (fun (s:string) -> s.Substring(String.length prefix))
+                    |> wordsWithPrefix gameState.prefix
+                    |> List.map (fun (s:string) -> s.Substring(String.length gameState.prefix))
                 let sayContinue =
                     matchingSuffixes
                     |> List.exists (fun (s:string) -> s.Length = 1)
@@ -112,7 +121,10 @@ module WordBomb =
                         )
                     |> List.sortByDescending String.length
                     |> List.head
-                Proceed (sayContinue, (prefix + (string chosenSuffix.[0])))
+                Proceed {
+                    continueCalled = sayContinue
+                    prefix = (gameState.prefix + (string chosenSuffix.[0]))
+                    }
         else
             Challenge
 
@@ -160,6 +172,7 @@ open WordBomb
 let wordListFile = fsi.CommandLineArgs.[1]
 let numPlayers = int fsi.CommandLineArgs.[2]
 let prefix = fsi.CommandLineArgs.[3]
+let continueCalled = Convert.ToBoolean fsi.CommandLineArgs.[4]
 
 let wordsToTrie trie =
     trie
@@ -168,5 +181,5 @@ let wordsToTrie trie =
 
 System.IO.File.ReadLines wordListFile 
 |> wordsToTrie
-|> WordBomb.takeTurn numPlayers prefix
+|> WordBomb.takeTurn numPlayers { continueCalled = continueCalled; prefix = prefix }
 |> printfn "%A"

@@ -18,14 +18,15 @@ This program implements one turn of a player, given
 - a wordlist.
 - number of players.
 - the sequence of characters proposed so far.
+- whether or not the previous player said "continue".
 
 ### **How to use this program?**
 
-dotnet fsi .\WordBomb.fsx <wordlistfile> <numplayers> <wordprefix>
+    dotnet fsi .\WordBomb.fsx <wordlistfile> <numplayers> <wordprefix> <continuecalled>
 
 Example 1
 
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 bracket
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 and false
 
 will output
 
@@ -33,17 +34,32 @@ will output
 
 Example 2
 
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 brac
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 and true
 
 will output
 
-    Proceed (true, "brack")
+    Proceed { continueCalled = false ; prefix = "andr" }
 
 Example 3
 
-    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 foobar
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 andr true
+
+will output
+
+    NotAWord
+
+Example 4
+
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 brac false
+
+will output
+
+    Proceed { continueCalled = true ; prefix = "brack" }
+
+Example 5
+
+    dotnet fsi .\WordBomb.fsx .\wordlist.txt 2 foobar false
 
 will output
 
     Challenge
-
