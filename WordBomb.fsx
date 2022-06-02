@@ -93,13 +93,19 @@ module WordBomb =
             prefix : string
         }
 
+    let makeGame () =
+        {
+            continueCalled = false
+            prefix = ""
+        }
+
     type TurnResult =
     | NotAWord
     | Bombed
     | Challenge
     | Proceed of GameState
 
-    let takeTurn numPlayers (gameState: GameState) trie =
+    let takeTurn numPlayers trie (gameState: GameState) =
         if hasPrefix gameState.prefix trie then
             if (hasWord gameState.prefix trie) && (not gameState.continueCalled) then
                 Bombed
@@ -110,58 +116,30 @@ module WordBomb =
                     trie
                     |> wordsWithPrefix gameState.prefix
                     |> List.map (fun (s:string) -> s.Substring(String.length gameState.prefix))
-                let sayContinue =
-                    matchingSuffixes
-                    |> List.exists (fun (s:string) -> s.Length = 1)
                 let chosenSuffix =
                     matchingSuffixes
                     |> List.filter (
                         fun (s:string) ->
                             (s.Length = 1) || ((s.Length - 1) % numPlayers <> 0)
-                        )
+                    )
                     |> List.sortByDescending String.length
                     |> List.head
+                let sayContinue =
+                    matchingSuffixes
+                    |> List.exists (
+                        fun (s:string) ->
+                            s.Length = 1
+                            &&
+                            chosenSuffix.StartsWith s
+                            &&
+                            chosenSuffix <> s
+                    )
                 Proceed {
                     continueCalled = sayContinue
                     prefix = (gameState.prefix + (string chosenSuffix.[0]))
                     }
         else
             Challenge
-
-module TrieTest =
-
-    open Trie
-
-    let wordList =
-        [
-            "aardvark"
-            "aardwolf"
-            "aaron"
-            "aback"
-            "abacus"
-            "abaft"
-            "abashed"
-            "woo"
-            "wood"
-            "woodbine"
-            "woodcock"
-            "woodcocks"
-            "woodcut"
-            "woodcuts"
-            "woodcutter"
-            "woodcutters"
-            "wooded"
-            "wooden"
-            "abate"
-            "abbeys"
-            "abbot"
-            "abbots"
-            "abbreviate"
-        ]
-
-    System.IO.File.ReadLines(".\wordlist.txt")
-    |> Seq.fold (fun trie w -> trie |> Trie.addWord w) (makeTrie())
-    |> Trie.wordsWithPrefix "cad"
 
 //------------------------------------------------------------------------------
 
@@ -170,16 +148,72 @@ open Trie
 open WordBomb
 
 let wordListFile = fsi.CommandLineArgs.[1]
-let numPlayers = int fsi.CommandLineArgs.[2]
-let prefix = fsi.CommandLineArgs.[3]
-let continueCalled = Convert.ToBoolean fsi.CommandLineArgs.[4]
+let numPlayers = 2
 
-let wordsToTrie trie =
-    trie
+let trie =
+    System.IO.File.ReadLines wordListFile 
     |> Seq.filter (fun w -> not (String.IsNullOrWhiteSpace w))
     |> Seq.fold (fun trie w -> trie |> Trie.addWord w) (makeTrie())
 
-System.IO.File.ReadLines wordListFile 
-|> wordsToTrie
-|> WordBomb.takeTurn numPlayers { continueCalled = continueCalled; prefix = prefix }
-|> printfn "%A"
+printfn "Enter an English letter, followed by a '.' character if you believe "
+printfn "this letter results in a valid word, but can be extended further to "
+printfn "a different valid word, otherwise enter a space ' ' character."
+printfn "\n"
+
+let oneRound gameState =
+
+    match Console.ReadKey().KeyChar with
+
+    | '?' ->
+
+        let turnResult =
+            WordBomb.takeTurn numPlayers trie gameState
+
+        match turnResult with
+        | NotAWord ->
+            printfn "\nMy bad! That was not a real word, I lose."
+        | Bombed ->
+            printfn "\nBombed! I lose."
+        | Challenge ->
+            printfn "\nMy bad! There is no such word, I lose."
+        | Proceed(gameState') ->
+            printfn "\nHey! Below are the possible words, you lose."
+
+            trie
+            |> wordsWithPrefix gameState.prefix
+            |> List.iter (printfn "%s")
+
+        Some (true, gameState)
+
+    | l ->
+
+        let continueCalled =
+            match Console.ReadKey().KeyChar with
+            | '.' -> true
+            | ' ' -> false
+            | c -> failwith (sprintf "Invalid character '%c' entered" c)
+        
+        let prefix' = gameState.prefix + (l.ToString())
+
+        let turnResult =
+            WordBomb.takeTurn numPlayers trie { continueCalled = continueCalled ; prefix = prefix' }
+
+        match turnResult with
+        | NotAWord ->
+            printfn "\nYou called continue, but %s is not a valid word." prefix'
+            Some (true, gameState)
+        | Bombed ->
+            printfn "\nBombed! You lose."
+            Some (true, gameState)
+        | Challenge ->
+            printfn "\nChallenge! There is no such word."
+            Some (true, gameState)
+        | Proceed(gameState') ->
+            Console.Write (gameState'.prefix.Substring(gameState'.prefix.Length-1))
+            if gameState'.continueCalled then
+                Console.Write "."
+            else
+                Console.Write " "
+            Some (false, gameState')
+
+Seq.unfold oneRound (makeGame()) |> Seq.find id
