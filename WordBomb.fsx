@@ -217,3 +217,20 @@ let oneRound gameState =
             Some (false, gameState')
 
 Seq.unfold oneRound (makeGame()) |> Seq.find id
+
+
+
+open System
+
+let allWords =
+    System.IO.File.ReadLines ".\wordlist.txt"
+    |> Seq.filter (fun w -> not (String.IsNullOrWhiteSpace w))
+    |> Set.ofSeq
+
+let possiblyPluralWords =
+    allWords
+    |> Set.filter (fun w -> w.EndsWith('s'))
+
+let notPluralWords =
+    possiblyPluralWords
+    |> Set.filter (fun w -> not (Set.contains (w.Remove(w.Length-1)) allWords))
